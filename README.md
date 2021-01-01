@@ -1,2 +1,2 @@
 # ac_milan_pic
-crawling AC milan football club photogallery
+Crawling AC milan football club photogallery, using python chrome selenium
