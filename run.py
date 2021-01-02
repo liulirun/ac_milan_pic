@@ -23,8 +23,8 @@ def timeit(method):
 class Milan_Pics():
     def __init__(self):
         self.IF_DEBUG = True
-        self.MORE = 2
-
+        self.MORE = 10
+        self.rootdir = "{}/{}".format(os.getcwd(), "pics")
         # define selectors will be used
         self.SELECTOR_LOAD_MORE = "button[class*='LoadMoreButton__StyledLoadButton']"
         self.SELECTOR_CATEGORIES = "a[class^='NewsItemSections__NewsItemLinkContainer']"
@@ -33,45 +33,67 @@ class Milan_Pics():
 
         if self.IF_DEBUG:
             print("initializing chromedriver")
-        self.driver = webdriver.Chrome()
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1420,1080')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('log-level=1')
+
+        self.driver = webdriver.Chrome(chrome_options=chrome_options)
+
         self.wait = WebDriverWait(self.driver, 10)
         self.wait_right_button = WebDriverWait(self.driver, 3)
         self.driver.get("https://www.acmilan.com/en/news/photogallery/latest")
         self.wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, self.SELECTOR_LOAD_MORE)))
 
-    @timeit
-    def load_more(self):
-        for i in range(self.MORE):
-            load_more_button = self.driver.find_element_by_css_selector(
-                self.SELECTOR_LOAD_MORE)
-            load_more_button.location_once_scrolled_into_view
+    def create_pics_folder(self):
+        if(not os.path.exists(self.rootdir)):
+            print("creating {} folder".format(self.rootdir))
+            os.mkdir(self.rootdir)
 
-            load_more_button.click()
-            self.wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, self.SELECTOR_LOAD_MORE), "LOADING..."))
-            self.wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, self.SELECTOR_LOAD_MORE), "LOAD MORE"))
+    def remove_empty_folders(self):
+        for i in os.scandir(self.rootdir):
+            if i.is_dir():
+                files = [x for x in os.scandir(i.path)]
+                if len(files) == 0:
+                    print("remove folder {} due to no files".format(i.path))
+                    os.rmdir(i.path)
 
     @ timeit
     def run(self):
+        self.create_pics_folder()
         self.load_more()
-
         categories = self.driver.find_elements_by_css_selector(self.SELECTOR_CATEGORIES)
-        res = {i.text.translate({ord(c): " " for c in "!@#$%^&*()[]{};:,./<>?\|`~-=_+\n"})
-                                : i.get_attribute('href') for i in categories}
+        l = [i.get_attribute('href') for i in categories]
+        res = {'-'.join(i.split("/")[-2:]): i for i in l}
 
-        for key in res.keys():
+        keys = res.keys()
+        for index, key in enumerate(keys, start=1):
             if self.IF_DEBUG:
-                print("  \nget_sub() --> total {} categories, current: {}".format(len(res), key))
+                print("  run() --> {} out of {} categories, name: {}".format(index, len(keys), key))
 
             self.driver.get(res[key])
             self.wait.until(EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, self.SELECTOR_RIGHT_BUTTON)))
-            self.category_pic_links(key)
+            self.download_category(key)
 
         self.driver.close()
+        self.remove_empty_folders()
 
-    @ timeit
-    def category_pic_links(self, folder_name):
+    def load_more(self):
+        for i in range(self.MORE):
+            load_more_button = self.driver.find_element_by_css_selector(
+                self.SELECTOR_LOAD_MORE)
+
+            load_more_button.location_once_scrolled_into_view
+            load_more_button.click()
+
+            self.wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, self.SELECTOR_LOAD_MORE), "LOADING..."))
+            self.wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, self.SELECTOR_LOAD_MORE), "LOAD MORE"))
+
+    def category_pic_links(self):
         right_button = self.driver.find_element_by_css_selector(self.SELECTOR_RIGHT_BUTTON)
         while True:
             try:
@@ -80,24 +102,27 @@ class Milan_Pics():
                     (By.CSS_SELECTOR, self.SELECTOR_RIGHT_BUTTON)))
             except TimeoutException:
                 break
-
         links = self.driver.find_elements_by_css_selector(self.SELECTOR_IMG)
-        d_links = [i.get_attribute("src").replace("&auto=format", "") for i in links]
+        download_urls = [i.get_attribute("src").replace("&auto=format", "") for i in links]
+        return download_urls
 
-        if not os.path.exists(folder_name):
-            os.mkdir(folder_name)
-            self._download(folder_name, d_links)
+    @ timeit
+    def download_category(self, category_name):
+        if not os.path.exists("{}/{}".format(self.rootdir, category_name)):
+            os.mkdir("{}/{}".format(self.rootdir, category_name))
+            download_urls = self.category_pic_links()
+            self._download(category_name, download_urls)
             if self.IF_DEBUG:
-                print("  _download() --> save files to {}".format(folder_name))
+                print("  _download() --> save {} files to {}".format(len(download_urls), category_name))
 
-    def _download(self, folder_name, links):
-        for link in links:
+    def _download(self, category_name, download_urls):
+        for link in download_urls:
             file_name = link.split("/")[-1]
             r = requests.get(link, allow_redirects=True)
-            with open("./{}/{}".format(folder_name, file_name), 'wb') as f:
+            with open("{}/{}/{}".format(self.rootdir, category_name, file_name), 'wb') as f:
                 f.write(r.content)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     m = Milan_Pics()
     m.run()
