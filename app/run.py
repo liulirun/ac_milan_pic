@@ -22,7 +22,7 @@ def timeit(method):
 
 class Milan_Pics():
     def __init__(self):
-        self.IF_DEBUG = True
+        self.IF_DEBUG = False
         self.MORE = 10
         self.rootdir = "{}/{}".format(os.getcwd(), "pics")
         # define selectors will be used
@@ -38,6 +38,7 @@ class Milan_Pics():
         chrome_options.add_argument('--window-size=1420,1080')
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('log-level=1')
 
         self.driver = webdriver.Chrome(chrome_options=chrome_options)
@@ -81,6 +82,7 @@ class Milan_Pics():
 
         self.driver.close()
         self.remove_empty_folders()
+        print(u"下载完成")
 
     def load_more(self):
         for i in range(self.MORE):
@@ -106,7 +108,6 @@ class Milan_Pics():
         download_urls = [i.get_attribute("src").replace("&auto=format", "") for i in links]
         return download_urls
 
-    @ timeit
     def download_category(self, category_name):
         if not os.path.exists("{}/{}".format(self.rootdir, category_name)):
             os.mkdir("{}/{}".format(self.rootdir, category_name))
