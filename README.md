@@ -11,13 +11,14 @@ Crawling AC milan football club photogallery, using python chrome selenium
 2. 在C盘或者其他盘新建文件夹，以 `C:\milan`为例。在此文件夹下，新建文件，文件名`docker-compose.yml`，内容如下：
 ```
 version: "3.6"
+
 services:
   mysql:
     container_name: milan
-    image: milan-img:latest
+    image: liulirun/milan-img:latest
     volumes:
       - ./app:/home
-    command: bash -c "cd /home && python run.py"
+    command: bash -c "cp /run.py /home/ && cd /home && python run.py"
 ```
 或者拷贝[docker-compose.yml](https://github.com/liulirun/ac_milan_pic/blob/main/docker-compose.yml) 到 C:\milan
 

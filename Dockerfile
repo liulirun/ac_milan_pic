@@ -20,6 +20,7 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 ENV DISPLAY=:99
 
 # copy app/run.py file from local
-COPY app/. /home
-
-#run this to build docker: docker build -t milan-img .
+COPY app/run.py /run.py
+#build docker: docker build -t milan-img .
+#tag: docker tag milan-img liulirun/milan-img
+#push: docker image push liulirun/milan-img:latest
