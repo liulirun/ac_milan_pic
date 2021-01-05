@@ -1,20 +1,17 @@
-#USING python:3.8-slim as base image to reduce size
-FROM python:3.8-slim
+#source: https://github.com/joyzoursky/docker-python-chromedriver/blob/master/py-debian/3.8-selenium/Dockerfile
+#USING python:3.8 as base image,size will be larger
+FROM python:3.8
 
 # install google chrome
-RUN apt-get -y update && apt-get install -y \
-    gnupg2 \
-    wget \
-    curl && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' && \
     apt-get -y update && \
     apt-get install -y google-chrome-stable && \
     # install chromedriver
-    apt-get install -yqq unzip  && \
+    apt-get install -yqq unzip && \
     wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`/chromedriver_linux64.zip && \
     unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ $$ \
-    rm -rf /tmp/chromedriver.zip && \
+    rm /tmp/chromedriver.zip && \
     # upgrade pip,# install selenium
     pip install --upgrade pip && \
     pip install selenium && \
@@ -24,8 +21,7 @@ RUN apt-get -y update && apt-get install -y \
 ENV DISPLAY=:99
 
 # copy app/run.py file from local
-COPY app/run.py /
-
-#build docker: docker build -t milan-img:latest -t milan-img:0.1 .
+COPY app/run.py /run.py
+#build docker: docker build -t milan-img .
 #tag: docker tag milan-img liulirun/milan-img
 #push: docker image push liulirun/milan-img:latest

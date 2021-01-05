@@ -22,9 +22,9 @@ def timeit(method):
 
 class Milan_Pics():
     def __init__(self):
-        self.IF_DEBUG = False
+        self.IF_DEBUG = True
         self.MORE = 10
-        self.rootdir = "{}/{}".format(os.getcwd(), "pics")
+        self.rootdir = "{}/{}".format(os.path.dirname(os.path.realpath(__file__)), "pics")
         # define selectors will be used
         self.SELECTOR_LOAD_MORE = "button[class*='LoadMoreButton__StyledLoadButton']"
         self.SELECTOR_CATEGORIES = "a[class^='NewsItemSections__NewsItemLinkContainer']"
@@ -32,7 +32,7 @@ class Milan_Pics():
         self.SELECTOR_IMG = "li[class*='GalleryCarousel__Slide']>span>img"
 
         if self.IF_DEBUG:
-            print("initializing chromedriver")
+            print("initializing chromedriver, picture dir {}".format(self.rootdir))
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--window-size=1420,1080')
@@ -75,10 +75,7 @@ class Milan_Pics():
             if self.IF_DEBUG:
                 print("  run() --> {} out of {} categories, name: {}".format(index, len(keys), key))
 
-            self.driver.get(res[key])
-            self.wait.until(EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, self.SELECTOR_RIGHT_BUTTON)))
-            self.download_category(key)
+            self.download_category(key, res[key])
 
         self.driver.close()
         self.remove_empty_folders()
@@ -95,7 +92,10 @@ class Milan_Pics():
             self.wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, self.SELECTOR_LOAD_MORE), "LOADING..."))
             self.wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, self.SELECTOR_LOAD_MORE), "LOAD MORE"))
 
-    def category_pic_links(self):
+    def category_pic_links(self, category_link):
+        self.driver.get(category_link)
+        self.wait.until(EC.visibility_of_element_located(
+            (By.CSS_SELECTOR, self.SELECTOR_RIGHT_BUTTON)))
         right_button = self.driver.find_element_by_css_selector(self.SELECTOR_RIGHT_BUTTON)
         while True:
             try:
@@ -108,10 +108,11 @@ class Milan_Pics():
         download_urls = [i.get_attribute("src").replace("&auto=format", "") for i in links]
         return download_urls
 
-    def download_category(self, category_name):
+    def download_category(self, category_name, category_link):
+        # download only if we do not have such folder in local
         if not os.path.exists("{}/{}".format(self.rootdir, category_name)):
             os.mkdir("{}/{}".format(self.rootdir, category_name))
-            download_urls = self.category_pic_links()
+            download_urls = self.category_pic_links(category_link)
             self._download(category_name, download_urls)
             if self.IF_DEBUG:
                 print("  _download() --> save {} files to {}".format(len(download_urls), category_name))
