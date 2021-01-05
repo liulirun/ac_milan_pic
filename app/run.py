@@ -23,7 +23,7 @@ def timeit(method):
 class Milan_Pics():
     def __init__(self):
         self.IF_DEBUG = True
-        self.MORE = 10
+        self.MORE = 20
         self.rootdir = "{}/{}".format(os.path.dirname(os.path.realpath(__file__)), "pics")
         # define selectors will be used
         self.SELECTOR_LOAD_MORE = "button[class*='LoadMoreButton__StyledLoadButton']"
